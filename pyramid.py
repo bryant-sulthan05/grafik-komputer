@@ -1,44 +1,138 @@
+"""
+HLPYRAMID
+"""
+
+import numpy as np
 import matplotlib.pyplot as plt
 from math import sin, cos, radians
 
-x = [-10, 10, 10, -10, 0]
-y = [-10, -10, 10, 10, 0]
-z = [-10, -10, -10, -10, 15]
-edges = [(0,1),(1,2),(2,3),(3,0),(0,4),(1,4),(2,4),(3,4)]
+#——————————————————————define lists
+x=[0,-10,0,10]
+y=[-20,0,0,0]
+z=[0,10,-15,10]
 
-def rotate(xp, yp, zp, Rx, Ry, Rz):
-    y1 = yp*cos(Rx) - zp*sin(Rx)
-    z1 = yp*sin(Rx) + zp*cos(Rx)
-    x2 = xp*cos(Ry) + z1*sin(Ry)
-    z2 = -xp*sin(Ry) + z1*cos(Ry)
-    x3 = x2*cos(Rz) - y1*sin(Rz)
-    y3 = x2*sin(Rz) + y1*cos(Rz)
-    return x3, y3, z2
+xg=[0]*len(x)
+yg=[0]*len(x)
+zg=[0]*len(x)
 
-def draw_pyramid(Rx, Ry, Rz):
-    plt.clf()
-    plt.axis([-20,20,-20,20])
-    plt.axis("off")
-    plt.title("Hidden Line Removal – Pyramid")
-    coords = [rotate(x[i], y[i], z[i], Rx, Ry, Rz) for i in range(5)]
-    for e in edges:
-        zmean = (coords[e[0]][2] + coords[e[1]][2]) / 2
-        if zmean > 0:
-            plt.plot([coords[e[0]][0], coords[e[1]][0]],
-                     [coords[e[0]][1], coords[e[1]][1]], 'k', lw=2)
-    plt.pause(0.001)
+#============================================define rotation function
+def rotx(xc,yc,zc,xp,yp,zp,Rx):
+    xpp=xp
+    ypp=yp*cos(Rx)-zp*sin(Rx)
+    zpp=yp*sin(Rx)+zp*cos(Rx)
+    [xg,yg,zg]=[xpp+xc,ypp+yc,zpp+zc]
+    return[xg,yg,zg]
 
-plt.ion()
-Rx = Ry = Rz = 0
-draw_pyramid(Rx, Ry, Rz)
-print("=== HLPYRAMID ===")
+def roty(xc,yc,zc,xp,yp,zp,Ry):
+    xpp=xp*cos(Ry)+zp*sin(Ry)
+    ypp=yp
+    zpp=-xp*sin(Ry)+zp*cos(Ry)
+    [xg,yg,zg]=[xpp+xc,ypp+yc,zpp+zc]
+    return[xg,yg,zg]
+
+def rotz(xc,yc,zc,xp,yp,zp,Rz):
+    xpp=xp*cos(Rz)-yp*sin(Rz)
+    ypp=xp*sin(Rz)+yp*cos(Rz)
+    zpp=zp
+    [xg,yg,zg]=[xpp+xc,ypp+yc,zpp+zc]
+    return[xg,yg,zg]
+
+#======================================define pyramid plotting function
+def plotpyramid(xg,yg,zg):
+    v01x=x[1]-x[0]  #———0,1,2 face
+    v01y=y[1]-y[0]
+    v01z=z[1]-z[0]
+    v02x=x[2]-x[0]
+    v02y=y[2]-y[0]
+    v02z=z[2]-z[0]
+    nz=v01x*v02y-v01y*v02x
+    if nz<=0:
+        plt.plot([xg[0],xg[1]],[yg[0],yg[1]],color='k',linewidth=2)
+        plt.plot([xg[1],xg[2]],[yg[1],yg[2]],color='k',linewidth=2)
+        plt.plot([xg[2],xg[0]],[yg[2],yg[0]],color='k',linewidth=2)
+    else:
+        plt.plot([xg[0],xg[1]],[yg[0],yg[1]],color='k',linestyle=':')
+        plt.plot([xg[1],xg[2]],[yg[1],yg[2]],color='k',linestyle=':')
+        plt.plot([xg[2],xg[0]],[yg[2],yg[0]],color='k',linestyle=':')
+
+    v03x=x[3]-x[0]  #—0,2,3 face
+    v03y=y[3]-y[0]
+    v03z=z[3]-z[0]
+    nz=v02x*v03y-v02y*v03x
+    if nz<=0:
+        plt.plot([xg[0],xg[2]],[yg[0],yg[2]],color='k',linewidth=2)
+        plt.plot([xg[0],xg[3]],[yg[0],yg[3]],color='k',linewidth=2)
+        plt.plot([xg[2],xg[3]],[yg[2],yg[3]],color='k',linewidth=2)
+    else:
+        plt.plot([xg[0],xg[2]],[yg[0],yg[2]],color='k',linestyle=':')
+        plt.plot([xg[0],xg[3]],[yg[0],yg[3]],color='k',linestyle=':')
+        plt.plot([xg[2],xg[3]],[yg[2],yg[3]],color='k',linestyle=':')
+
+    nz=v03x*v01y-v03y*v01x  #—0,2,3 face
+    if nz<=0:
+        plt.plot([xg[0],xg[1]],[yg[0],yg[1]],color='k',linewidth=2)
+        plt.plot([xg[0],xg[3]],[yg[0],yg[3]],color='k',linewidth=2)
+        plt.plot([xg[1],xg[3]],[yg[1],yg[3]],color='k',linewidth=2)
+    else:
+        plt.plot([xg[0],xg[1]],[yg[0],yg[1]],color='k',linestyle=':')
+        plt.plot([xg[0],xg[3]],[yg[0],yg[3]],color='k',linestyle=':')
+        plt.plot([xg[1],xg[3]],[yg[1],yg[3]],color='k',linestyle=':')
+
+    v21x=x[1]-x[2]  #———1,2,3 face
+    v21y=y[1]-y[2]
+    v21z=z[1]-z[2]
+    v23x=x[3]-x[2]
+    v23y=y[3]-y[2]
+    v23z=z[3]-z[2]
+    nz=v21x*v23y-v21y*v23x
+    if nz<0:
+        plt.plot([x[2],x[1]],[y[2],y[1]])
+        plt.plot([x[1],x[3]],[y[1],y[3]])
+        plt.plot([x[3],x[2]],[y[3],y[2]])
+
+    plt.scatter(xc,yc,s=5,color='k')  #———plot a dot at the center
+    plt.axis([0,150,100,0])  #———replot axes and grid
+    plt.axis('on')
+    plt.grid(True)
+    plt.show()  #–plot latest rotation
+
+#========================transform coordinates and plotting functions
+def plotpyramidx(xc,yc,zc,Rx):  #——————transform & plot Rx pyramid
+    for i in range(len(x)):
+        [xg[i],yg[i],zg[i]]=rotx(xc,yc,zc,x[i],y[i],z[i],Rx)
+        [x[i],y[i],z[i]]=[xg[i]-xc,yg[i]-yc,zg[i]-zc]
+    
+    plotpyramid(xg,yg,zg)  #—————plot
+
+def plotpyramidy(xc,yc,zc,Ry):
+    for i in range(len(x)):  #——————transform & plot Ry pyramid
+        [xg[i],yg[i],zg[i]]=roty(xc,yc,zc,x[i],y[i],z[i],Ry)
+        [x[i],y[i],z[i]]=[xg[i]-xc,yg[i]-yc,zg[i]-zc]
+    
+    plotpyramid(xg,yg,zg)
+
+def plotpyramidz(xc,yc,zc,Rz):
+    for i in range(len(x)):  #——————transform & plot Rz pyramid
+        [xg[i],yg[i],zg[i]]=rotz(xc,yc,zc,x[i],y[i],z[i],Rz)
+        [x[i],y[i],z[i]]=[xg[i]-xc,yg[i]-yc,zg[i]-zc]
+    
+    plotpyramid(xg,yg,zg)
+
+#———————————————————plot pyramids
+xc=75  #——center coordinates
+yc=50
+zc=50
+
 while True:
-    s = input("\nSumbu (x/y/z/q): ").lower()
-    if s == "q": break
-    a = radians(float(input("Sudut rotasi (°): ")))
-    if s == "x": Rx += a
-    elif s == "y": Ry += a
-    elif s == "z": Rz += a
-    draw_pyramid(Rx, Ry, Rz)
-plt.ioff()
-plt.show()
+    axis=input('x, y or z?: ')  #———input axis of rotation (lower case)
+    if axis == 'x':  #———if x axis
+        Rx=radians(float(input('Rx Degrees?: ')))  #———input degrees of rotation
+        plotpyramidx(xc,yc,zc,Rx)  #———call function plotpyramidx
+    if axis == 'y':
+        Ry=radians(float(input('Ry Degrees?: ')))  #———input degrees of rotation
+        plotpyramidy(xc,yc,zc,Ry)
+    if axis == 'z':
+        Rz=radians(float(input('Rz Degrees?: ')))  #———input degrees of rotation
+        plotpyramidz(xc,yc,zc,Rz)
+    if axis == "":
+        break

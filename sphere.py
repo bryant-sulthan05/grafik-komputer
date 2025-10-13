@@ -1,67 +1,107 @@
-# Chapter 6 – Hidden Line Removal: Sphere (HLSphere)
+"""
+HLSPHERE
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
-from math import sin, cos, radians
+from math import sin, cos, radians, sqrt
 
-def rotate(xp, yp, zp, Rx, Ry, Rz):
-    y1 = yp*cos(Rx) - zp*sin(Rx)
-    z1 = yp*sin(Rx) + zp*cos(Rx)
-    x2 = xp*cos(Ry) + z1*sin(Ry)
-    z2 = -xp*sin(Ry) + z1*cos(Ry)
-    x3 = x2*cos(Rz) - y1*sin(Rz)
-    y3 = x2*sin(Rz) + y1*cos(Rz)
-    return x3, y3, z2
+plt.axis([0,150,100,0])
+plt.axis('off')
+plt.grid(False)
 
-def make_sphere(n=20, r=10):
-    pts = []
-    for i in range(n+1):
-        theta = np.pi * i / n
-        for j in range(n+1):
-            phi = 2*np.pi * j / n
-            x = r * np.sin(theta) * np.cos(phi)
-            y = r * np.sin(theta) * np.sin(phi)
-            z = r * np.cos(theta)
-            pts.append((x, y, z))
-    edges = []
-    for i in range(n):
-        for j in range(n):
-            a = i*(n+1)+j
-            b = a+1
-            c = a+(n+1)
-            edges.append((a,b))
-            edges.append((a,c))
-    return pts, edges
+g=[0]*3
 
-def draw_sphere(Rx, Ry, Rz):
-    plt.clf()
-    plt.axis([-12,12,-12,12])
-    plt.axis("off")
-    plt.title("Hidden Line Removal – Sphere")
-    pts, edges = make_sphere()
-    coords = [rotate(p[0],p[1],p[2],Rx,Ry,Rz) for p in pts]
-    for e in edges:
-        zmean = (coords[e[0]][2] + coords[e[1]][2]) / 2
-        if zmean > 0:
-            plt.plot([coords[e[0]][0], coords[e[1]][0]],
-                     [coords[e[0]][1], coords[e[1]][1]], 'k', lw=1)
-    plt.pause(0.001)
+xc=80
+yc=50
+zc=0
 
-plt.ion()
-Rx = Ry = Rz = 0
-draw_sphere(Rx, Ry, Rz)
-print("=== HLSphere ===")
-print("Masukkan sumbu rotasi (x/y/z), atau q untuk keluar.")
-while True:
-    s = input("\nSumbu (x/y/z/q): ").lower()
-    if s == "q": break
-    try:
-        a = radians(float(input("Sudut rotasi (derajat): ")))
-    except ValueError:
-        continue
-    if s == "x": Rx += a
-    elif s == "y": Ry += a
-    elif s == "z": Rz += a
-    draw_sphere(Rx, Ry, Rz)
-plt.ioff()
+rs=40
+
+#=========================================================
+def rotx(xc,yc,zc,xp,yp,zp,Rx):
+    g[0]=xp+xc
+    g[1]=yp*cos(Rx)-zp*sin(Rx)+yc
+    g[2]=yp*sin(Rx)+zp*cos(Rx)+zc
+    return[g]
+
+def roty(xc,yc,zc,xp,yp,zp,Ry):
+    g[0]=xp*cos(Ry)+zp*sin(Ry)+xc
+    g[1]=yp+yc
+    g[2]=-xp*sin(Ry)+zp*cos(Ry)+zc
+    return[g]
+
+def rotz(xc,yc,zc,xp,yp,zp,Rz):
+    g[0]=xp*cos(Rz)-yp*sin(Rz)+xc
+    g[1]=xp*sin(Rz)+yp*cos(Rz)+yc
+    g[2]=zp+zc
+    return[g]
+
+#————————————————-longitudes and latitudes
+phi1=radians(-90)
+phi2=radians(90)
+dphi=radians(6)
+
+alpha1=radians(0)
+alpha2=radians(360)
+dalpha=radians(6)
+
+Rx=radians(45)
+Ry=radians(-20)
+Rz=radians(40)
+
+for alpha in np.arange(alpha1,alpha2,dalpha):  #———longitudes
+    for phi in np.arange(phi1,phi2,dphi):
+        xp=rs*cos(phi)*cos(alpha)
+        yp=rs*sin(phi)
+        zp=-rs*cos(phi)*sin(alpha)
+        rotx(xc,yc,zc,xp,yp,zp,Rx)
+        xp=g[0]-xc
+        yp=g[1]-yc
+        zp=g[2]-zc
+        roty(xc,yc,zc,xp,yp,zp,Ry)
+        xp=g[0]-xc
+        yp=g[1]-yc
+        zp=g[2]-zc
+        rotz(xc,yc,zc,xp,yp,zp,Rz)
+        xpg=g[0]
+        ypg=g[1]
+        zpg=g[2]
+        nz=zpg-zc
+        if phi == phi1:
+            xpglast=xpg
+            ypglast=ypg
+        if nz < 0:
+            plt.plot([xpglast,xpg],[ypglast,ypg],linewidth=.5,color='g')
+        xpglast=xpg
+        ypglast=ypg
+
+for phi in np.arange(phi1,phi2,dphi):  #—————latitudes
+    r=rs*cos(phi)
+    for alpha in np.arange(alpha1,alpha2+dalpha,dalpha):
+        xp=r*cos(alpha)
+        yp=rs*sin(phi)
+        zp=-rs*cos(phi)*sin(alpha)
+        rotx(xc,yc,zc,xp,yp,zp,Rx)
+        xp=g[0]-xc
+        yp=g[1]-yc
+        zp=g[2]-zc
+        roty(xc,yc,zc,xp,yp,zp,Ry)
+        xp=g[0]-xc
+        yp=g[1]-yc
+        zp=g[2]-zc
+        rotz(xc,yc,zc,xp,yp,zp,Rz)
+        xpg=g[0]
+        ypg=g[1]
+        zpg=g[2]
+        nz=zpg-zc
+        if alpha == alpha1:
+            xpglast=xpg
+            ypglast=ypg
+        if nz < 0:
+            plt.plot([xpglast,xpg],[ypglast,ypg],linewidth=.5,color='b')
+        xpglast=xpg
+        ypglast=ypg
+
 plt.show()
+

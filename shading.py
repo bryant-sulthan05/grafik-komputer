@@ -1,94 +1,135 @@
 """
-PERSPECTIVE — contoh proyeksi perspektif kubus 3D
-Berdasarkan Chapter 8 dari 'Python Graphics: A Reference for Creating 2D and 3D Images'
+SHADEBOX
 """
 
+import numpy as np
 import matplotlib.pyplot as plt
-from math import sin, cos, radians
+from math import sin, cos, radians, sqrt
 
-# Titik-titik kubus
-x = [-10, 10, 10, -10, -10, 10, 10, -10]
-y = [-10, -10, 10, 10, -10, -10, 10, 10]
-z = [10, 10, 10, 10, -10, -10, -10, -10]
+#—————————————————————————lists
+x=[-20,20,20,-20,-20,20,20,-20]
+y=[-10,-10,-10,-10,10,10,10,10]
+z=[5,5,-5,-5,5,5,-5,-5]
 
-# Parameter proyeksi
-d = 50   # jarak pandang
-xc, yc = 75, 50
+xg=[0]*len(x)
+yg=[0]*len(x)
+zg=[0]*len(x)
 
-# Fungsi rotasi
-def rotx(xp, yp, zp, Rx):
-    y2 = yp*cos(Rx) - zp*sin(Rx)
-    z2 = yp*sin(Rx) + zp*cos(Rx)
-    return xp, y2, z2
+#———————————————————————parameters
+xc=75  #———center coordinates
+yc=50
+zc=50
 
-def roty(xp, yp, zp, Ry):
-    x2 = xp*cos(Ry) + zp*sin(Ry)
-    z2 = -xp*sin(Ry) + zp*cos(Ry)
-    return x2, yp, z2
+lx=.707  #———light ray unit vector components
+ly=.707
+lz=0
 
-def rotz(xp, yp, zp, Rz):
-    x2 = xp*cos(Rz) - yp*sin(Rz)
-    y2 = xp*sin(Rz) + yp*cos(Rz)
-    return x2, y2, zp
+clr='k'  #———use this for black monochrome images, or use another color
+#clr=(.5,0,.5)  #———use this to mix colors, this mix produces purple
+Io=.8
 
-# Fungsi proyeksi perspektif
-def perspective(xp, yp, zp):
-    scale = d / (d + zp)
-    xp2 = xc + xp * scale
-    yp2 = yc - yp * scale
-    return xp2, yp2
+#=====================================================define rotation functions
+def rotx(xc,yc,zc,xp,yp,zp,Rx):
+    xpp=xp
+    ypp=yp*cos(Rx)-zp*sin(Rx)
+    zpp=yp*sin(Rx)+zp*cos(Rx)
+    [xg,yg,zg]=[xpp+xc,ypp+yc,zpp+zc]
+    return[xg,yg,zg]
 
-# Fungsi plot
-def plot_cube(Rx=0, Ry=0, Rz=0):
-    plt.clf()
-    plt.axis([0, 150, 100, 0])
-    plt.grid(True)
-    plt.title("Perspective Projection — Rotating Cube")
+def roty(xc,yc,zc,xp,yp,zp,Ry):
+    xpp=xp*cos(Ry)+zp*sin(Ry)
+    ypp=yp
+    zpp=-xp*sin(Ry)+zp*cos(Ry)
+    [xg,yg,zg]=[xpp+xc,ypp+yc,zpp+zc]
+    return[xg,yg,zg]
 
-    xg, yg, zg = [], [], []
-    for i in range(8):
-        xp, yp, zp = x[i], y[i], z[i]
-        xp, yp, zp = rotx(xp, yp, zp, Rx)
-        xp, yp, zp = roty(xp, yp, zp, Ry)
-        xp, yp, zp = rotz(xp, yp, zp, Rz)
-        xg.append(xp)
-        yg.append(yp)
-        zg.append(zp)
+def rotz(xc,yc,zc,xp,yp,zp,Rz):
+    xpp=xp*cos(Rz)-yp*sin(Rz)
+    ypp=xp*sin(Rz)+yp*cos(Rz)
+    zpp=zp
+    [xg,yg,zg]=[xpp+xc,ypp+yc,zpp+zc]
+    return[xg,yg,zg]
 
-    # Gambar sisi-sisi kubus
-    edges = [(0,1),(1,2),(2,3),(3,0),
-             (4,5),(5,6),(6,7),(7,4),
-             (0,4),(1,5),(2,6),(3,7)]
+#==============================================================shading
+def shade(ax,ay,az,bx,by,bz,cx,cy,cz,dx,dy,dz):
+    a=dx-ax
+    b=dy-ay
+    c=dz-az
+    qad=sqrt(a*a+b*b+c*c)
+    ux=a/qad
+    uy=b/qad
+    uz=c/qad
+    a=bx-ax
+    b=by-ay
+    c=bz-az
+    qab=sqrt(a*a+b*b+c*c)
+    vx=a/qab
+    vy=b/qab
+    vz=c/qab
+    nx=uy*vz-uz*vy
+    ny=uz*vx-ux*vz
+    nz=ux*vy-uy*vx
+    ndotl=nx*lx+ny*ly+nz*lz
+    I=.5*Io*(1+ndotl)
+    if nz<=0:
+        plt.plot([ax,bx],[ay,by],color='k',linewidth=1)
+        plt.plot([bx,cx],[by,cy],color='k',linewidth=1)
+        plt.plot([cx,dx],[cy,dy],color='k',linewidth=1)
+        plt.plot([dx,ax],[dy,ay],color='k',linewidth=1)
+        for h in np.arange(0,qad,1):
+            xls=ax+h*ux
+            yls=ay+h*uy
+            xle=bx+h*ux
+            yle=by+h*uy
+            plt.plot([xls,xle],[yls,yle],linewidth=2,alpha=I,color=clr)
 
-    for e in edges:
-        x1, y1 = perspective(xg[e[0]], yg[e[0]], zg[e[0]])
-        x2, y2 = perspective(xg[e[1]], yg[e[1]], zg[e[1]])
-        plt.plot([x1, x2], [y1, y2], 'k', lw=2)
+#=============================================================
+def plotbox(xg,yg,zg):
+    shade(xg[0],yg[0],zg[0],xg[1],yg[1],zg[1],xg[2],yg[2],zg[2],xg[3],yg[3],zg[3])
+    shade(xg[7],yg[7],zg[7],xg[6],yg[6],zg[6],xg[5],yg[5],zg[5],xg[4],yg[4],zg[4])
+    shade(xg[0],yg[0],zg[0],xg[3],yg[3],zg[3],xg[7],yg[7],zg[7],xg[4],yg[4],zg[4])
+    shade(xg[1],yg[1],zg[1],xg[5],yg[5],zg[5],xg[6],yg[6],zg[6],xg[2],yg[2],zg[2])
+    shade(xg[3],yg[3],zg[3],xg[2],yg[2],zg[2],xg[6],yg[6],zg[6],xg[7],yg[7],zg[7])
+    shade(xg[4],yg[4],zg[4],xg[5],yg[5],zg[5],xg[1],yg[1],zg[1],xg[0],yg[0],zg[0])
 
-    plt.pause(0.001)
+    plt.axis([0,150,100,0])
+    plt.axis('off')
+    plt.grid(False)
+    plt.show()
 
-# =================== Loop utama interaktif ===================
-plt.ion()
-Rx = Ry = Rz = 0
-plot_cube(Rx, Ry, Rz)
+#============================================================
+def plotboxx(xc,yc,zc,Rx):  #——————transform and plot Rx
+    for i in range(len(x)):
+        [xg[i],yg[i],zg[i]]=rotx(xc,yc,zc,x[i],y[i],z[i],Rx)
+        [x[i],y[i],z[i]]=[xg[i]-xc,yg[i]-yc,zg[i]-zc]
 
-print("=== Program Perspective Cube ===")
-print("Ketik sumbu rotasi (x/y/z) atau q untuk keluar.")
+    plotbox(xg,yg,zg)  #—————plot
 
+def plotboxy(xc,yc,zc,Ry):
+    for i in range(len(x)):  #——————transform and plot Ry
+        [xg[i],yg[i],zg[i]]=roty(xc,yc,zc,x[i],y[i],z[i],Ry)
+        [x[i],y[i],z[i]]=[xg[i]-xc,yg[i]-yc,zg[i]-zc]
+
+    plotbox(xg,yg,zg)
+
+def plotboxz(xc,yc,zc,Rz):
+    for i in range(len(x)):  #——————transform and plot Rz
+        [xg[i],yg[i],zg[i]]=rotz(xc,yc,zc,x[i],y[i],z[i],Rz)
+        [x[i],y[i],z[i]]=[xg[i]-xc,yg[i]-yc,zg[i]-zc]
+
+    plotbox(xg,yg,zg)
+
+#————————————————————————-input
 while True:
-    axis = input("\nSumbu (x/y/z/q): ").strip().lower()
-    if axis == "q":
+    axis=input('x, y or z?: ')  #———input axis of rotation (lower case)
+    if axis == 'x':  #–if x axis
+        Rx=radians(float(input('Rx Degrees?: ')))  #———input degrees
+        plotboxx(xc,yc,zc,Rx)  #———call function plotboxx
+    if axis == 'y':
+        Ry=radians(float(input('Ry Degrees?: ')))  #———input degrees
+        plotboxy(xc,yc,zc,Ry)
+    if axis == 'z':
+        Rz=radians(float(input('Rz Degrees?: ')))  #———input degrees
+        plotboxz(xc,yc,zc,Rz)
+    if axis == "":
         break
-    try:
-        angle = float(input("Masukkan sudut rotasi (derajat): "))
-    except ValueError:
-        continue
-    if axis == "x":
-        Rx += radians(angle)
-    elif axis == "y":
-        Ry += radians(angle)
-    elif axis == "z":
-        Rz += radians(angle)
-    plot_cube(Rx, Ry, Rz)
-
-print("Selesai.")

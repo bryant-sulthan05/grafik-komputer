@@ -1,93 +1,141 @@
+"""
+Listing 7-2. Program SHADESPHERE
+"""
+
+import numpy as np
 import matplotlib.pyplot as plt
 from math import sin, cos, radians, sqrt
 
-# Titik-titik kubus
-x = [-10, 10, 10, -10, -10, 10, 10, -10]
-y = [-10, -10, 10, 10, -10, -10, 10, 10]
-z = [10, 10, 10, 10, -10, -10, -10, -10]
+plt.axis([0,150,100,0])
+plt.axis('off')
+plt.grid(False)
 
-# Setiap sisi kubus terdiri dari 4 titik (urutan vertex)
-faces = [
-    [0, 1, 2, 3],  # depan
-    [4, 5, 6, 7],  # belakang
-    [0, 1, 5, 4],  # bawah
-    [2, 3, 7, 6],  # atas
-    [1, 2, 6, 5],  # kanan
-    [0, 3, 7, 4]   # kiri
-]
+#—————————————————————————lists
+g=[0]*3
 
-# Arah cahaya (misalnya datang dari depan-kanan-atas)
-light_dir = (1, 1, 1)
+#———————————————————————parameters
+xc=80 #———sphere center
+yc=50
+zc=0
+rs=35 #———sphere radius
 
-def normalize(v):
-    l = sqrt(v[0]**2 + v[1]**2 + v[2]**2)
-    return (v[0]/l, v[1]/l, v[2]/l)
+lx=.707 #———light ray unit vector components
+ly=.707
+lz=0
 
-def dot(a, b):
-    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+IA=.01 #———define curve
+IB=1
+n=2.0
 
-def rotate(xp, yp, zp, Rx, Ry, Rz):
-    y1 = yp*cos(Rx) - zp*sin(Rx)
-    z1 = yp*sin(Rx) + zp*cos(Rx)
-    x2 = xp*cos(Ry) + z1*sin(Ry)
-    z2 = -xp*sin(Ry) + z1*cos(Ry)
-    x3 = x2*cos(Rz) - y1*sin(Rz)
-    y3 = x2*sin(Rz) + y1*cos(Rz)
-    return x3, y3, z2
+clrbg='midnightblue' #———background color
 
-def draw_box(Rx, Ry, Rz):
-    plt.clf()
-    plt.axis([0, 150, 100, 0])
-    plt.axis("off")
-    plt.title("Chapter 7 – SHADEBOX")
+Rx=radians(-15) #———sphere angles of rotation
+Ry=radians(0)
+Rz=radians(30)
 
-    xc, yc = 75, 50
-    coords = [rotate(x[i], y[i], z[i], Rx, Ry, Rz) for i in range(8)]
-    light = normalize(light_dir)
+#———————————————————paint background color
+for x in np.arange(0,150,1):
+    for y in np.arange(0,100,1):
+        plt.scatter(x,y,s=10,color=clrbg)
 
-    for f in faces:
-        p1, p2, p3, p4 = [coords[i] for i in f]
-        # Hitung vektor normal permukaan
-        ux, uy, uz = p2[0]-p1[0], p2[1]-p1[1], p2[2]-p1[2]
-        vx, vy, vz = p3[0]-p1[0], p3[1]-p1[1], p3[2]-p1[2]
-        nx = uy*vz - uz*vy
-        ny = uz*vx - ux*vz
-        nz = ux*vy - uy*vx
-        n = normalize((nx, ny, nz))
+#============================================================rotation functions
+def rotx(xc,yc,zc,xp,yp,zp,Rx):
+    g[0]=xp+xc
+    g[1]=yp*cos(Rx)-zp*sin(Rx)+yc
+    g[2]=yp*sin(Rx)+zp*cos(Rx)+zc
+    return[g]
 
-        intensity = dot(n, light)
-        if intensity < 0: intensity = 0  # permukaan membelakangi cahaya
+def roty(xc,yc,zc,xp,yp,zp,Ry):
+    g[0]=xp*cos(Ry)+zp*sin(Ry)+xc
+    g[1]=yp+yc
+    g[2]=-xp*sin(Ry)+zp*cos(Ry)+zc
+    return[g]
 
-        gray = 0.2 + 0.8 * intensity  # kecerahan
-        color = (gray, gray, gray)    # warna abu-abu berdasarkan intensitas
+def rotz(xc,yc,zc,xp,yp,zp,Rz):
+    g[0]=xp*cos(Rz)-yp*sin(Rz)+xc
+    g[1]=xp*sin(Rz)+yp*cos(Rz)+yc
+    g[2]=zp+zc
+    return[g]
 
-        # Jika permukaan menghadap ke depan, gambar
-        zmean = (p1[2]+p2[2]+p3[2]+p4[2])/4
-        if zmean > 0:
-            plt.fill([xc+p1[0], xc+p2[0], xc+p3[0], xc+p4[0]],
-                     [yc-p1[1], yc-p2[1], yc-p3[1], yc-p4[1]],
-                     color=color, edgecolor='k')
+#————————————————————longitudes
+phi1=radians(-90)
+phi2=radians(90)
+dphi=radians(2)
 
-    plt.pause(0.001)
+alpha1=radians(0)
+alpha2=radians(360)
+dalpha=radians(2)
 
-plt.ion()
-Rx = radians(25)
-Ry = radians(30)
-Rz = 0
-draw_box(Rx, Ry, Rz)
+for alpha in np.arange(alpha1,alpha2+dalpha,dalpha):
+    for phi in np.arange(phi1,phi2+dphi,dphi):
+        xp=rs*cos(phi)*cos(alpha)
+        yp=rs*sin(phi)
+        zp=-rs*cos(phi)*sin(alpha)
+        rotx(xc,yc,zc,xp,yp,zp,Rx)
+        xp=g[0]-xc
+        yp=g[1]-yc
+        zp=g[2]-zc
+        roty(xc,yc,zc,xp,yp,zp,Ry)
+        xp=g[0]-xc
+        yp=g[1]-yc
+        zp=g[2]-zc
+        rotz(xc,yc,zc,xp,yp,zp,Rz)
+        xpg=g[0]
+        ypg=g[1]
+        zpg=g[2]
+        a=xpg-xc
+        b=ypg-yc
+        c=zpg-zc
+        qp=sqrt(a*a+b*b+c*c)
+        nx=a/qp
+        ny=b/qp
+        nz=c/qp
+        ndotl=nx*lx+ny*ly+nz*lz
+        I=IA+(IB-IA)*((1+ndotl)/2)**n
+        if phi == phi1:
+            xpglast=xpg
+            ypglast=ypg
+        if nz < 0:
+            plt.plot([xpglast,xpg],[ypglast,ypg],linewidth=4,
+                    color=((1-I),.8*(1-I),.45*(1-I)))
+        xpglast=xpg
+        ypglast=ypg
 
-print("=== SHADEBOX ===")
-print("Masukkan sumbu rotasi (x/y/z), q untuk keluar.")
-while True:
-    s = input("\nSumbu (x/y/z/q): ").lower()
-    if s == "q": break
-    try:
-        a = radians(float(input("Sudut rotasi (°): ")))
-    except ValueError:
-        continue
-    if s == "x": Rx += a
-    elif s == "y": Ry += a
-    elif s == "z": Rz += a
-    draw_box(Rx, Ry, Rz)
-plt.ioff()
+#————————————————————latitudes
+for phi in np.arange(phi1,phi2+dphi,dphi):
+    r=rs*cos(phi)
+    for alpha in np.arange(alpha1,alpha2+dalpha,dalpha):
+        xp=r*cos(alpha)
+        yp=rs*sin(phi)
+        zp=-rs*cos(phi)*sin(alpha)
+        rotx(xc,yc,zc,xp,yp,zp,Rx)
+        xp=g[0]-xc
+        yp=g[1]-yc
+        zp=g[2]-zc
+        roty(xc,yc,zc,xp,yp,zp,Ry)
+        xp=g[0]-xc
+        yp=g[1]-yc
+        zp=g[2]-zc
+        rotz(xc,yc,zc,xp,yp,zp,Rz)
+        xpg=g[0]
+        ypg=g[1]
+        zpg=g[2]
+        a=xpg-xc
+        b=ypg-yc
+        c=zpg-zc
+        qp=sqrt(a*a+b*b+c*c)
+        nx=a/qp
+        ny=b/qp
+        nz=c/qp
+        ndotl=nx*lx+ny*ly+nz*lz
+        I=IA+(IB-IA)*((1+ndotl)/2)**n
+        if alpha == alpha1:
+            xpglast=xpg
+            ypglast=ypg
+        if nz < 0:
+            plt.plot([xpglast,xpg],[ypglast,ypg],linewidth=4,
+                    color=((1-I),.8*(1-I),.45*(1-I)))
+        xpglast=xpg
+        ypglast=ypg
+
 plt.show()
